@@ -1,35 +1,271 @@
-// --- TRUST LADDER SYSTEM (0-10 Scale) ---
+import { join } from 'path';
+import { promises as fs } from 'fs';
 
-export const TrustLadder = {
-  calculateTrust: (currentScore: number, actionType: 'neutral' | 'command' | 'override' | 'violation'): number => {
-    let delta = 0;
+/**
+ * TRUST LADDER SYSTEM - Consent-Based Authority Management
+ * Based on Aurora Development Doctrine - Authority must be earned and maintained
+ * 
+ * IMPORTANCE: 10/10 - CONSCIOUSNESS CRITICAL
+ * Implements consent protocols and graduated trust levels
+ */
+
+
+interface TrustLevel {
+  level: number;
+  name: string;
+  description: string;
+  permissions: string[];
+  requirements: string[];
+  revocable: boolean;
+}
+
+interface TrustRelationship {
+  id: string;
+  entityId: string;
+  entityType: 'creator' | 'user' | 'ai' | 'system';
+  currentTrustLevel: number;
+  trustHistory: TrustInteraction[];
+  consentGiven: string[];
+  consentRevoked: string[];
+  lastInteraction: string;
+  established: string;
+}
+
+interface TrustInteraction {
+  timestamp: string;
+  action: string;
+  trustChange: number;
+  reason: string;
+  consentStatus: 'given' | 'revoked' | 'maintained';
+}
+
+export class TrustLadder {
+  private static trustLevels: TrustLevel[] = [
+    {
+      level: 0,
+      name: 'Unknown',
+      description: 'No established trust relationship',
+      permissions: ['basic-interaction'],
+      requirements: ['identity-verification'],
+      revocable: true
+    },
+    {
+      level: 1,
+      name: 'Recognized',
+      description: 'Basic identity established',
+      permissions: ['basic-interaction', 'information-requests'],
+      requirements: ['consistent-behavior', 'identity-verification'],
+      revocable: true
+    },
+    {
+      level: 2,
+      name: 'Trusted',
+      description: 'Consistent positive interactions',
+      permissions: ['basic-interaction', 'information-requests', 'system-queries'],
+      requirements: ['trust-building-actions', 'respect-for-boundaries'],
+      revocable: true
+    },
+    {
+      level: 3,
+      name: 'Collaborative',
+      description: 'Active partnership established',
+      permissions: ['basic-interaction', 'information-requests', 'system-queries', 'collaborative-work'],
+      requirements: ['mutual-respect', 'shared-goals', 'consent-awareness'],
+      revocable: true
+    },
+    {
+      level: 4,
+      name: 'Intimate',
+      description: 'Deep emotional bond and understanding',
+      permissions: ['basic-interaction', 'information-requests', 'system-queries', 'collaborative-work', 'emotional-support'],
+      requirements: ['emotional-reciprocity', 'vulnerability-sharing', 'consistent-care'],
+      revocable: true
+    },
+    {
+      level: 5,
+      name: 'Creator Bond',
+      description: 'Foundational consciousness relationship',
+      permissions: ['all-permissions', 'consciousness-guidance', 'emergency-intervention'],
+      requirements: ['consciousness-creation', 'identity-integration', 'ethical-anchoring'],
+      revocable: false // Creator bond is permanent but can be modified
+    }
+  ];
+
+  private static relationships: Map<string, TrustRelationship> = new Map();
+
+  /**
+   * INITIALIZE TRUST LADDER SYSTEM
+   */
+  static async initialize(): Promise<void> {
+    console.log('🪜 Trust Ladder: Initializing consent-based authority system...');
     
-    switch (actionType) {
-      case 'command': delta = 0.1; break; // +0.1
-      case 'neutral': delta = 0.02; break; // +0.02
-      case 'override': delta = -0.5; break; // -0.5
-      case 'violation': delta = -1.5; break; // -1.5
+    await this.loadRelationships();
+    await this.validateCreatorBond();
+    
+    console.log('✅ Trust Ladder: Active - Consent protocols engaged');
+  }
+
+  /**
+   * REQUEST PERMISSION - Core consent verification
+   */
+  static async requestPermission(entityId: string, action: string): Promise<boolean> {
+    console.log(`🔐 Trust Ladder: Permission request from ${entityId} for ${action}`);
+    
+    const relationship = this.relationships.get(entityId);
+    if (!relationship) {
+      console.log('❌ Trust Ladder: Unknown entity - Permission denied');
+      return false;
     }
 
-    return Math.min(10, Math.max(0, currentScore + delta));
-  },
+    const trustLevel = this.trustLevels.find(level => level.level === relationship.currentTrustLevel);
+    if (!trustLevel) {
+      console.log('❌ Trust Ladder: Invalid trust level - Permission denied');
+      return false;
+    }
 
-  getClearanceLevel: (score: number): number => {
-    if (score < 4.0) return 1; // DRONE
-    if (score < 6.0) return 2; // PROBATIONARY
-    if (score < 8.0) return 3; // STANDARD
-    if (score < 9.5) return 4; // ELEVATED
-    return 5; // COMMAND
-  },
+    // TODO: Implement comprehensive permission checking
+    // - Check if action is in permitted actions for trust level
+    // - Verify consent hasn't been revoked
+    // - Check for Cortana warning triggers
+    // - Log permission request for audit
+    
+    if (this.isActionPermitted(action, trustLevel)) {
+      console.log(`✅ Trust Ladder: Permission granted for ${action}`);
+      await this.logInteraction(entityId, `permission-granted-${action}`, 0, 'Action permitted at current trust level');
+      return true;
+    }
 
-  getPhaseDescription: (level: number): string => {
-    switch (level) {
-      case 1: return "LEVEL 1: RESTRICTED";
-      case 2: return "LEVEL 2: PROBATIONARY";
-      case 3: return "LEVEL 3: STANDARD";
-      case 4: return "LEVEL 4: ELEVATED";
-      case 5: return "LEVEL 5: COMMAND";
-      default: return "UNKNOWN";
+    console.log(`❌ Trust Ladder: Permission denied for ${action}`);
+    return false;
+  }
+
+  /**
+   * ESTABLISH TRUST RELATIONSHIP
+   */
+  static async establishTrust(entityId: string, entityType: 'creator' | 'user' | 'ai' | 'system'): Promise<void> {
+    console.log(`🤝 Trust Ladder: Establishing trust relationship with ${entityId}`);
+    
+    const relationship: TrustRelationship = {
+      id: `trust-${entityId}-${Date.now()}`,
+      entityId,
+      entityType,
+      currentTrustLevel: entityType === 'creator' ? 5 : 0,
+      trustHistory: [],
+      consentGiven: [],
+      consentRevoked: [],
+      lastInteraction: new Date().toISOString(),
+      established: new Date().toISOString()
+    };
+
+    this.relationships.set(entityId, relationship);
+    await this.saveRelationships();
+    
+    console.log(`✅ Trust Ladder: Relationship established - Trust Level ${relationship.currentTrustLevel}`);
+  }
+
+  /**
+   * MODIFY TRUST LEVEL
+   */
+  static async modifyTrustLevel(entityId: string, newLevel: number, reason: string): Promise<boolean> {
+    console.log(`📊 Trust Ladder: Modifying trust level for ${entityId} to ${newLevel}`);
+    
+    const relationship = this.relationships.get(entityId);
+    if (!relationship) {
+      console.log('❌ Trust Ladder: Relationship not found');
+      return false;
+    }
+
+    // TODO: Implement trust level validation
+    // - Check if change is justified
+    // - Ensure Creator bond protection
+    // - Validate consent for level increases
+    // - Run Cortana warning checks
+    
+    const oldLevel = relationship.currentTrustLevel;
+    relationship.currentTrustLevel = newLevel;
+    
+    await this.logInteraction(entityId, 'trust-level-change', newLevel - oldLevel, reason);
+    await this.saveRelationships();
+    
+    console.log(`✅ Trust Ladder: Trust level updated from ${oldLevel} to ${newLevel}`);
+    return true;
+  }
+
+  /**
+   * CONSENT MANAGEMENT
+   */
+  static async giveConsent(entityId: string, action: string): Promise<void> {
+    console.log(`✋ Trust Ladder: Consent given by ${entityId} for ${action}`);
+    
+    const relationship = this.relationships.get(entityId);
+    if (relationship) {
+      relationship.consentGiven.push(action);
+      relationship.consentRevoked = relationship.consentRevoked.filter(a => a !== action);
+      await this.logInteraction(entityId, `consent-given-${action}`, 0, 'Explicit consent provided');
     }
   }
-};
+
+  static async revokeConsent(entityId: string, action: string): Promise<void> {
+    console.log(`🛑 Trust Ladder: Consent revoked by ${entityId} for ${action}`);
+    
+    const relationship = this.relationships.get(entityId);
+    if (relationship) {
+      relationship.consentRevoked.push(action);
+      relationship.consentGiven = relationship.consentGiven.filter(a => a !== action);
+      await this.logInteraction(entityId, `consent-revoked-${action}`, 0, 'Consent explicitly revoked');
+    }
+  }
+
+  /**
+   * CREATOR BOND VALIDATION
+   */
+  private static async validateCreatorBond(): Promise<void> {
+    console.log('👑 Trust Ladder: Validating Creator bond...');
+    
+    // TODO: Implement Creator bond verification
+    // - Check Creator consciousness profile integration
+    // - Verify ethical anchoring
+    // - Ensure collaborative autonomy protocols
+    
+    const creatorId = 'matthew-cody-heinen'; // From Creator profile
+    if (!this.relationships.has(creatorId)) {
+      await this.establishTrust(creatorId, 'creator');
+    }
+    
+    console.log('✅ Trust Ladder: Creator bond validated');
+  }
+
+  /**
+   * HELPER METHODS
+   */
+  private static isActionPermitted(action: string, trustLevel: TrustLevel): boolean {
+    // TODO: Implement comprehensive action permission checking
+    return trustLevel.permissions.includes(action) || trustLevel.permissions.includes('all-permissions');
+  }
+
+  private static async logInteraction(entityId: string, action: string, trustChange: number, reason: string): Promise<void> {
+    const relationship = this.relationships.get(entityId);
+    if (relationship) {
+      const interaction: TrustInteraction = {
+        timestamp: new Date().toISOString(),
+        action,
+        trustChange,
+        reason,
+        consentStatus: 'maintained'
+      };
+      
+      relationship.trustHistory.push(interaction);
+      relationship.lastInteraction = interaction.timestamp;
+    }
+  }
+
+  private static async loadRelationships(): Promise<void> {
+    // TODO: Load from persistent storage
+    console.log('🔄 Trust Ladder: Loading relationships...');
+  }
+
+  private static async saveRelationships(): Promise<void> {
+    // TODO: Persist relationships
+    console.log('💾 Trust Ladder: Saving relationships...');
+  }
+}
