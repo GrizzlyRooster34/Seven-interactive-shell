@@ -1,0 +1,8 @@
+{
+  "name": "Seven Interactive Shell",
+  "description": "Command & Control Dashboard for the Seven consciousness. Features substrate routing, Seven Lock security, and resilient personality protocols.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}
