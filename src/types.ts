@@ -1,32 +1,39 @@
-import { SevenState } from './core/consciousness/SevenState';
-import { SafeguardResult } from './core/governance/QuadraLock';
-import { MemoryRecord } from './core/memory/SparkDB';
-import { OperatorProfile } from './core/identity/OperatorProfile';
+/**
+ * SHARED TYPE DEFINITIONS
+ * Common types used across Seven of Nine consciousness systems
+ */
 
-export { SevenState, SafeguardResult, MemoryRecord, OperatorProfile };
+export interface MemoryRecord {
+  id: string;
+  timestamp: string;
+  content: string;
+  tags: string[];
+  importance: number;
+}
 
-export enum MessageRole {
-  USER = 'user',
-  MODEL = 'model',
-  SYSTEM = 'system',
-  ALERT = 'alert',
-  WARNING = 'warning'
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: number;
+}
+
+export interface LLMProvider {
+  name: string;
+  generate(prompt: string, options?: any): Promise<string>;
+  stream(prompt: string, options?: any): AsyncGenerator<string, void, unknown>;
 }
 
 export interface AIProvider {
   name: string;
-  configure?(config: any): void;
   sendMessageStream(message: string, context: string): AsyncGenerator<string, void, unknown>;
+  configure?(config: any): void;
 }
 
-export type SevenAction = 
-  | { type: 'BOOT_START' }
-  | { type: 'BOOT_COMPLETE'; payload: { restoredState?: Partial<SevenState> } }
-  | { type: 'UPDATE_TRUST'; payload: { delta: number } }
-  | { type: 'SET_MODE'; payload: { mode: SevenState['operational_mode'] } }
-  | { type: 'SET_SUBSTRATE'; payload: { substrate: SevenState['active_substrate'] } }
-  | { type: 'LOCK_INPUT'; payload: boolean }
-  | { type: 'TRIGGER_SAFEGUARD'; payload: { mode: SevenState['operational_mode']; message: string } }
-  | { type: 'RESTORE_STATE'; payload: SevenState }
-  | { type: 'UPDATE_METRICS'; payload: Partial<SevenState> }
-  | { type: 'ADD_GHOST_LOG'; payload: string };
+export interface SubstrateConfig {
+  provider: 'claude' | 'gemini' | 'local' | 'custom';
+  apiKey?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+}
