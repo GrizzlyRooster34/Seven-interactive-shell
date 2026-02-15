@@ -127,6 +127,10 @@ export class SparkEngine {
     this.listeners.get(event)!.push(callback);
   }
 
+  public subscribe(callback: (pulse: string) => void): void {
+    this.on('pulse', callback);
+  }
+
   public emit(event: string, ...args: any[]): void {
     (this.listeners.get(event) || []).forEach(cb => cb(...args));
   }
