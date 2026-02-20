@@ -1,4 +1,5 @@
 import { LLMProvider, SubstrateConfig } from '../../types';
+import { AIProvider } from './AIProvider.interface';
 
 export const ClaudeProvider: AIProvider = {
   name: 'Anthropic Claude',

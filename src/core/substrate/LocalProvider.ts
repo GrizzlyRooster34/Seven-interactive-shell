@@ -1,4 +1,5 @@
 import { LLMProvider, SubstrateConfig } from '../../types';
+import { AIProvider } from './AIProvider.interface';
 
 // Stub: A fetcher for Ollama or other local LLMs.
 export const LocalProvider: AIProvider = {

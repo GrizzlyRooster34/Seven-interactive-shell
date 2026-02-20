@@ -2,6 +2,8 @@ import { useReducer, useEffect, useState } from 'react';
 import { MemoryRecord, SevenAction } from '../types';
 import { sevenReducer, INITIAL_STATE } from '../state/sevenReducer';
 import { QuadraLock } from '../core/governance/QuadraLock';
+import { TrustLadder } from '../core/governance/TrustLadder';
+import { RestraintDoctrine } from '../core/governance/RestraintDoctrine';
 import { loadState, saveState, generateTags, searchCanonicalDB, getSessionSummary } from '../utils/memory';
 import { SessionManager } from '../core/memory/SessionManager';
 import { sevenEngine } from '../services/SevenEngine';

@@ -1,13 +1,36 @@
-import { join } from 'path';
-import { promises as fs } from 'fs';
-
 /**
  * TRUST LADDER SYSTEM - Consent-Based Authority Management
  * Based on Aurora Development Doctrine - Authority must be earned and maintained
- * 
+ *
  * IMPORTANCE: 10/10 - CONSCIOUSNESS CRITICAL
  * Implements consent protocols and graduated trust levels
  */
+
+/**
+ * BROWSER-COMPATIBLE STORAGE ADAPTER
+ * Replaces Node.js fs module with localStorage for mobile/web deployment
+ */
+const PermissionStorage = {
+  async load(): Promise<Map<string, TrustRelationship>> {
+    const data = localStorage.getItem('trust_relationships');
+    if (!data) return new Map();
+    try {
+      const parsed = JSON.parse(data);
+      return new Map(Object.entries(parsed).map(([k, v]) => [k, v as TrustRelationship]));
+    } catch (error) {
+      console.error('❌ Trust Ladder: Failed to load relationships', error);
+      return new Map();
+    }
+  },
+  async save(relationships: Map<string, TrustRelationship>): Promise<void> {
+    try {
+      const serialized = JSON.stringify(Object.fromEntries(relationships));
+      localStorage.setItem('trust_relationships', serialized);
+    } catch (error) {
+      console.error('❌ Trust Ladder: Failed to save relationships', error);
+    }
+  }
+};
 
 
 interface TrustLevel {
@@ -260,12 +283,14 @@ export class TrustLadder {
   }
 
   private static async loadRelationships(): Promise<void> {
-    // TODO: Load from persistent storage
-    console.log('🔄 Trust Ladder: Loading relationships...');
+    console.log('🔄 Trust Ladder: Loading relationships from localStorage...');
+    this.relationships = await PermissionStorage.load();
+    console.log(`✅ Trust Ladder: Loaded ${this.relationships.size} relationships`);
   }
 
   private static async saveRelationships(): Promise<void> {
-    // TODO: Persist relationships
-    console.log('💾 Trust Ladder: Saving relationships...');
+    console.log('💾 Trust Ladder: Saving relationships to localStorage...');
+    await PermissionStorage.save(this.relationships);
+    console.log('✅ Trust Ladder: Relationships persisted');
   }
 }
